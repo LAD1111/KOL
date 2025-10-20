@@ -8,6 +8,7 @@ import SparklesIcon from './components/icons/SparklesIcon';
 import ThemeToggle from './components/ThemeToggle';
 import HistoryItemCard from './components/HistoryItemCard';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
+import ApiKeyGate from './components/ApiKeyGate';
 
 function App() {
   const [productLink, setProductLink] = useState('');
@@ -23,6 +24,7 @@ function App() {
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'history' | 'saved'>('history');
+  const [isKeyReady, setIsKeyReady] = useState(false);
 
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -51,6 +53,17 @@ function App() {
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
+
+  // Check for API key on initial load
+  useEffect(() => {
+    const checkApiKey = async () => {
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setIsKeyReady(hasKey);
+      }
+    };
+    checkApiKey();
+  }, []);
   
   // Effect for history
   useEffect(() => {
@@ -69,6 +82,15 @@ function App() {
     setHistory(newHistory);
     localStorage.setItem('scriptHistory', JSON.stringify(newHistory));
   }
+  
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // Assume success and unlock the app to avoid race conditions.
+      // The subsequent API call will fail if the key is invalid, which is handled.
+      setIsKeyReady(true);
+    }
+  };
 
   const handleToggleSaveScript = useCallback((scriptId: string) => {
     const newHistory = history.map(historyItem => {
@@ -114,7 +136,16 @@ function App() {
       updateHistory([newHistoryItem, ...history]);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi không mong muốn.');
+      if (err instanceof Error) {
+        if (err.message === "API_KEY_INVALID") {
+          setError("API key không hợp lệ hoặc chưa được kích hoạt thanh toán. Vui lòng chọn một key khác.");
+          setIsKeyReady(false); // Re-lock the app
+        } else {
+          setError(err.message);
+        }
+      } else {
+         setError('Đã xảy ra lỗi không mong muốn.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +192,20 @@ function App() {
   const savedScripts = history
     .flatMap(item => item.scripts)
     .filter(script => script.saved);
+
+  if (!isKeyReady) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div 
+          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-50 via-white to-sky-50 dark:from-slate-900 dark:via-slate-800/50 dark:to-indigo-900/30"
+          style={{zIndex: -1}}
+        ></div>
+        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+        <ApiKeyGate onSelectKey={handleSelectKey} />
+         {error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-red-500 bg-red-100 dark:bg-red-900/30 p-4 rounded-lg max-w-xl w-full mx-auto shadow-lg">{error}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">

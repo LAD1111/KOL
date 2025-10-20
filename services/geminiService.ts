@@ -50,90 +50,100 @@ export async function generateScripts(
     ? "Ngoài ra, đối với mỗi kịch bản, hãy tạo một nội dung bài đăng ngắn gọn, hấp dẫn để đăng lên TikTok kèm theo video. Nội dung này phải bao gồm 5 hashtag có liên quan và đang thịnh hành."
     : "";
 
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: { parts: [textPart] },
-    config: {
-      systemInstruction: `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: { parts: [textPart] },
+      config: {
+        systemInstruction: `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
 
 Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích thông tin sản phẩm (tên, mô tả, hình ảnh, tính năng, lợi ích) và tạo ra 3 kịch bản video độc đáo và sáng tạo. Mỗi kịch bản phải ngắn gọn, hấp dẫn và được thiết kế để giới thiệu các tính năng và lợi ích tốt nhất của sản phẩm. ${cameraInstruction} ${hookInstruction} ${postInstruction}
 `,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          scripts: {
-            type: Type.ARRAY,
-            description: "Một danh sách gồm 3 kịch bản video.",
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: {
-                  type: Type.STRING,
-                  description: "Tiêu đề hấp dẫn cho ý tưởng video.",
-                },
-                hook: {
-                  type: Type.STRING,
-                  description: `Câu mở đầu hoặc ý tưởng hình ảnh mạnh mẽ cho 3 giây đầu tiên. ${hookStyle !== 'Mặc định' && HOOK_STYLE_DESCRIPTIONS[hookStyle] ? HOOK_STYLE_DESCRIPTIONS[hookStyle] : ''}`,
-                },
-                scenes: {
-                  type: Type.ARRAY,
-                  description: "Một chuỗi các cảnh trong video.",
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      visual: {
-                        type: Type.STRING,
-                        description: `Mô tả những gì sẽ hiển thị trên màn hình. ${includeCameraAngles ? "Bao gồm cả gợi ý về góc máy quay." : ""}`,
-                      },
-                      voiceover: {
-                        type: Type.STRING,
-                        description: "Lời thoại hoặc thuyết minh cho cảnh đó.",
-                      },
-                    },
-                    required: ["visual", "voiceover"],
-                  },
-                },
-                cta: {
-                  type: Type.STRING,
-                  description: "Lời kêu gọi hành động rõ ràng (Call to Action).",
-                },
-                postContent: {
-                  type: Type.STRING,
-                  description: "Nội dung bài đăng trên mạng xã hội cho video. Chỉ tạo nếu được yêu cầu.",
-                },
-                hashtags: {
-                  type: Type.ARRAY,
-                  description: "Danh sách 5 hashtag cho bài đăng. Chỉ tạo nếu được yêu cầu.",
-                  items: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            scripts: {
+              type: Type.ARRAY,
+              description: "Một danh sách gồm 3 kịch bản video.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: {
                     type: Type.STRING,
+                    description: "Tiêu đề hấp dẫn cho ý tưởng video.",
+                  },
+                  hook: {
+                    type: Type.STRING,
+                    description: `Câu mở đầu hoặc ý tưởng hình ảnh mạnh mẽ cho 3 giây đầu tiên. ${hookStyle !== 'Mặc định' && HOOK_STYLE_DESCRIPTIONS[hookStyle] ? HOOK_STYLE_DESCRIPTIONS[hookStyle] : ''}`,
+                  },
+                  scenes: {
+                    type: Type.ARRAY,
+                    description: "Một chuỗi các cảnh trong video.",
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        visual: {
+                          type: Type.STRING,
+                          description: `Mô tả những gì sẽ hiển thị trên màn hình. ${includeCameraAngles ? "Bao gồm cả gợi ý về góc máy quay." : ""}`,
+                        },
+                        voiceover: {
+                          type: Type.STRING,
+                          description: "Lời thoại hoặc thuyết minh cho cảnh đó.",
+                        },
+                      },
+                      required: ["visual", "voiceover"],
+                    },
+                  },
+                  cta: {
+                    type: Type.STRING,
+                    description: "Lời kêu gọi hành động rõ ràng (Call to Action).",
+                  },
+                  postContent: {
+                    type: Type.STRING,
+                    description: "Nội dung bài đăng trên mạng xã hội cho video. Chỉ tạo nếu được yêu cầu.",
+                  },
+                  hashtags: {
+                    type: Type.ARRAY,
+                    description: "Danh sách 5 hashtag cho bài đăng. Chỉ tạo nếu được yêu cầu.",
+                    items: {
+                      type: Type.STRING,
+                    },
                   },
                 },
+                required: ["title", "hook", "scenes", "cta"],
               },
-              required: ["title", "hook", "scenes", "cta"],
             },
           },
+          required: ["scripts"],
         },
-        required: ["scripts"],
       },
-    },
-  });
+    });
 
-  const responseText = response.text;
-  try {
-    const parsedJson = JSON.parse(responseText);
-    if (parsedJson.scripts && Array.isArray(parsedJson.scripts)) {
-      const scriptsWithIds: Script[] = parsedJson.scripts.map((script: Omit<Script, 'id' | 'saved'>, index: number) => ({
-        ...script,
-        id: `script-${Date.now()}-${index}`,
-      }));
-      return { ...parsedJson, scripts: scriptsWithIds };
+    const responseText = response.text;
+    try {
+      const parsedJson = JSON.parse(responseText);
+      if (parsedJson.scripts && Array.isArray(parsedJson.scripts)) {
+        const scriptsWithIds: Script[] = parsedJson.scripts.map((script: Omit<Script, 'id' | 'saved'>, index: number) => ({
+          ...script,
+          id: `script-${Date.now()}-${index}`,
+        }));
+        return { ...parsedJson, scripts: scriptsWithIds };
+      }
+      return parsedJson;
+    } catch (error) {
+      console.error("Failed to parse JSON response:", responseText);
+      throw new Error("AI đã trả về một định dạng không hợp lệ. Vui lòng thử lại.");
     }
-    return parsedJson;
-  } catch (error) {
-    console.error("Failed to parse JSON response:", responseText);
-    throw new Error("AI đã trả về một định dạng không hợp lệ. Vui lòng thử lại.");
+  } catch (e) {
+    if (e instanceof Error && (
+        e.message.includes("API key not valid") ||
+        e.message.includes("permission denied") ||
+        e.message.toLowerCase().includes("api key")
+    )) {
+        throw new Error("API_KEY_INVALID");
+    }
+    throw e;
   }
 }
 
