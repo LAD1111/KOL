@@ -24,6 +24,7 @@ const colors = [
 
 const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave, apiKey, onInvalidApiKey }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const [isPostCopied, setIsPostCopied] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -99,6 +100,14 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave, ap
     navigator.clipboard.writeText(formatScriptForCopy());
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+  
+  const handleCopyPostContent = () => {
+    if (!script.postContent) return;
+    const postText = `${script.postContent}\n\n${script.hashtags ? script.hashtags.join(' ') : ''}`;
+    navigator.clipboard.writeText(postText.trim());
+    setIsPostCopied(true);
+    setTimeout(() => setIsPostCopied(false), 2000);
   };
 
   const handleDownloadScript = () => {
@@ -197,7 +206,17 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave, ap
           
           {script.postContent && script.hashtags && (
             <div>
-              <h4 className="font-semibold text-orange-600 dark:text-orange-300 mb-1">✍️ Nội dung bài đăng</h4>
+              <div className="flex justify-between items-center mb-1">
+                <h4 className="font-semibold text-orange-600 dark:text-orange-300">✍️ Nội dung bài đăng</h4>
+                <button
+                  onClick={handleCopyPostContent}
+                  aria-label="Sao chép nội dung bài đăng"
+                  className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 text-xs font-semibold px-2 py-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
+                >
+                  <CopyIcon className="w-3.5 h-3.5" />
+                  {isPostCopied ? 'Đã chép!' : 'Chép nội dung'}
+                </button>
+              </div>
               <div className="pl-4 border-l-2 border-orange-400 space-y-2">
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">{script.postContent}</p>
                 <p className="text-sm text-blue-500 dark:text-blue-400 font-medium">{script.hashtags.join(' ')}</p>

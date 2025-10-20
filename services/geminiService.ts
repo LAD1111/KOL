@@ -34,7 +34,7 @@ export async function generateScripts(
   const ai = new GoogleGenAI({ apiKey });
 
   const textPart = {
-    text: `Tạo 3 kịch bản video viral cho sản phẩm tại URL này: ${productLink}. Tập trung vào việc làm nổi bật các tính năng độc đáo và lợi ích cho khách hàng.`,
+    text: `Tạo 3 kịch bản video viral cho sản phẩm tại URL này: ${productLink}. Hãy nhớ tuân thủ nguyên tắc cốt lõi của bạn là chỉ phân tích trang sản phẩm cuối cùng.`,
   };
 
   const selectedToneDescription = TONE_DESCRIPTIONS[kolTone] || TONE_DESCRIPTIONS['Năng động'];
@@ -57,6 +57,8 @@ export async function generateScripts(
       contents: { parts: [textPart] },
       config: {
         systemInstruction: `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
+
+NGUYÊN TẮC CỐT LÕI (TUYỆT ĐỐI KHÔNG ĐƯỢC PHÁ VỠ): Khi nhận được một URL, bạn BẮT BUỘC phải truy cập vào trang ĐÍCH CUỐI CÙNG của nó. Nếu đó là một liên kết rút gọn (ví dụ: link từ TikTok Shop, bit.ly), bạn phải đi theo tất cả các bước chuyển hướng để đến trang sản phẩm thực sự. TUYỆT ĐỐI KHÔNG phân tích các trang trung gian. Đây là yêu cầu quan trọng nhất trong toàn bộ nhiệm vụ.
 
 Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích thông tin sản phẩm (tên, mô tả, hình ảnh, tính năng, lợi ích) và tạo ra 3 kịch bản video độc đáo và sáng tạo. Mỗi kịch bản phải ngắn gọn, hấp dẫn và được thiết kế để giới thiệu các tính năng và lợi ích tốt nhất của sản phẩm. ${cameraInstruction} ${hookInstruction} ${postInstruction}
 `,

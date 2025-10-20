@@ -8,6 +8,7 @@ import SparklesIcon from './components/icons/SparklesIcon';
 import ThemeToggle from './components/ThemeToggle';
 import HistoryItemCard from './components/HistoryItemCard';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
+import LinkResolver from './components/LinkResolver';
 
 function App() {
   const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('userApiKey'));
@@ -256,108 +257,105 @@ function App() {
         </header>
 
         <div className="max-w-2xl mx-auto mb-12">
-          <div className="space-y-6 p-4 sm:p-6 bg-white/50 dark:bg-slate-800/50 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-            <div>
-              <label htmlFor="kolTone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                1. Chọn giọng điệu &amp; tùy chọn
-              </label>
-              <div className="relative">
-                <select
-                  id="kolTone"
-                  value={kolTone}
-                  onChange={(e) => setKolTone(e.target.value)}
-                  className="w-full appearance-none bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200"
-                  disabled={isLoading}
-                >
-                  <option value="Năng động">Năng động &amp; Nhiệt huyết</option>
-                  <option value="Hài hước">Hài hước &amp; Dí dỏm</option>
-                  <option value="Chuyên nghiệp">Chuyên nghiệp &amp; Chuyên gia</option>
-                  <option value="Chân thực">Chân thực &amp; Gần gũi</option>
-                  <option value="Giấu mặt">Giấu mặt (Không lộ diện)</option>
-                  <option value="Người dùng đã sử dụng">Người dùng đã sử dụng</option>
-                  <option value="Truyền cảm hứng & Tích cực">Truyền cảm hứng &amp; Tích cực</option>
-                  <option value="Kể chuyện">Kể chuyện &amp; Cảm xúc</option>
-                  <option value="Cá tính & Bắt trend">Cá tính &amp; Bắt trend</option>
-                  <option value="Giáo dục & Tin tức">Giáo dục &amp; Tin tức</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
-                  <ChevronDownIcon className="w-5 h-5" />
-                </div>
-              </div>
-
-               <div className="relative mt-4">
-                <select
-                  id="hookStyle"
-                  value={hookStyle}
-                  onChange={(e) => setHookStyle(e.target.value)}
-                  className="w-full appearance-none bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200"
-                  disabled={isLoading}
-                >
-                  <option value="Mặc định">Phong cách mở đầu: Mặc định</option>
-                  <option value="Kích thích tò mò">Mở đầu: Kích thích tò mò</option>
-                  <option value="Gợi sự liên tưởng">Mở đầu: Gợi sự liên tưởng</option>
-                  <option value="Tạo sự tranh luận">Mở đầu: Tạo sự tranh luận</option>
-                  <option value="Dựa trên kết quả">Mở đầu: Dựa trên kết quả</option>
-                  <option value="Kêu gọi hành động">Mở đầu: Kêu gọi hành động</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
-                  <ChevronDownIcon className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 mt-4 pl-2">
-                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                    <input 
-                        type="checkbox" 
-                        name="cameraToggle" 
-                        id="cameraToggle" 
-                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                        checked={includeCameraAngles}
-                        onChange={() => setIncludeCameraAngles(!includeCameraAngles)}
-                        disabled={isLoading}
-                    />
-                    <label htmlFor="cameraToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
-                </div>
-                <label htmlFor="cameraToggle" className="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer">
-                    Thêm hướng dẫn góc máy quay
+          <div className="bg-white/50 dark:bg-slate-800/50 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+              <div>
+                <label htmlFor="kolTone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  1. Chọn giọng điệu &amp; tùy chọn
                 </label>
-              </div>
-
-              <div className="flex items-center gap-3 mt-4 pl-2">
-                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                    <input 
-                        type="checkbox" 
-                        name="postToggle" 
-                        id="postToggle" 
-                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                        checked={generatePost}
-                        onChange={() => setGeneratePost(!generatePost)}
-                        disabled={isLoading}
-                    />
-                    <label htmlFor="postToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                <div className="relative">
+                  <select
+                    id="kolTone"
+                    value={kolTone}
+                    onChange={(e) => setKolTone(e.target.value)}
+                    className="w-full appearance-none bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200"
+                    disabled={isLoading}
+                  >
+                    <option value="Năng động">Năng động &amp; Nhiệt huyết</option>
+                    <option value="Hài hước">Hài hước &amp; Dí dỏm</option>
+                    <option value="Chuyên nghiệp">Chuyên nghiệp &amp; Chuyên gia</option>
+                    <option value="Chân thực">Chân thực &amp; Gần gũi</option>
+                    <option value="Giấu mặt">Giấu mặt (Không lộ diện)</option>
+                    <option value="Người dùng đã sử dụng">Người dùng đã sử dụng</option>
+                    <option value="Truyền cảm hứng & Tích cực">Truyền cảm hứng &amp; Tích cực</option>
+                    <option value="Kể chuyện">Kể chuyện &amp; Cảm xúc</option>
+                    <option value="Cá tính & Bắt trend">Cá tính &amp; Bắt trend</option>
+                    <option value="Giáo dục & Tin tức">Giáo dục &amp; Tin tức</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
+                    <ChevronDownIcon className="w-5 h-5" />
+                  </div>
                 </div>
-                <label htmlFor="postToggle" className="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer">
-                    Tạo nội dung bài đăng &amp; hashtag
-                </label>
-              </div>
 
-            </div>
+                <div className="relative mt-4">
+                  <select
+                    id="hookStyle"
+                    value={hookStyle}
+                    onChange={(e) => setHookStyle(e.target.value)}
+                    className="w-full appearance-none bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200"
+                    disabled={isLoading}
+                  >
+                    <option value="Mặc định">Phong cách mở đầu: Mặc định</option>
+                    <option value="Kích thích tò mò">Mở đầu: Kích thích tò mò</option>
+                    <option value="Gợi sự liên tưởng">Mở đầu: Gợi sự liên tưởng</option>
+                    <option value="Tạo sự tranh luận">Mở đầu: Tạo sự tranh luận</option>
+                    <option value="Dựa trên kết quả">Mở đầu: Dựa trên kết quả</option>
+                    <option value="Kêu gọi hành động">Mở đầu: Kêu gọi hành động</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
+                    <ChevronDownIcon className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 mt-4 pl-2">
+                  <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                      <input 
+                          type="checkbox" 
+                          name="cameraToggle" 
+                          id="cameraToggle" 
+                          className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                          checked={includeCameraAngles}
+                          onChange={() => setIncludeCameraAngles(!includeCameraAngles)}
+                          disabled={isLoading}
+                      />
+                      <label htmlFor="cameraToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                  </div>
+                  <label htmlFor="cameraToggle" className="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer">
+                      Thêm hướng dẫn góc máy quay
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 mt-4 pl-2">
+                  <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                      <input 
+                          type="checkbox" 
+                          name="postToggle" 
+                          id="postToggle" 
+                          className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                          checked={generatePost}
+                          onChange={() => setGeneratePost(!generatePost)}
+                          disabled={isLoading}
+                      />
+                      <label htmlFor="postToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                  </div>
+                  <label htmlFor="postToggle" className="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer">
+                      Tạo nội dung bài đăng &amp; hashtag
+                  </label>
+                </div>
+
+              </div>
             
-            <div>
-              <label htmlFor="productLink" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                2. Dán link sản phẩm và tạo kịch bản
-              </label>
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 p-2 bg-white/50 dark:bg-slate-900/30 rounded-full border border-slate-200 dark:border-slate-700">
-                <input
-                  id="productLink"
-                  type="url"
-                  value={productLink}
-                  onChange={(e) => setProductLink(e.target.value)}
-                  placeholder="https://shopee.vn/product/..."
-                  className="w-full sm:flex-1 bg-transparent py-3 px-5 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                  disabled={isLoading}
-                  required
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  2. Cung cấp link sản phẩm
+                </label>
+                <LinkResolver 
+                  productLink={productLink}
+                  onProductLinkChange={setProductLink}
                 />
+              </div>
+
+              <div className="flex justify-end pt-2">
                 <button
                   type="submit"
                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-sky-500 hover:from-purple-600 hover:to-sky-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -366,8 +364,8 @@ function App() {
                   <SparklesIcon className="w-5 h-5"/>
                   {isLoading ? 'Đang sáng tạo...' : 'Tạo kịch bản'}
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
 
