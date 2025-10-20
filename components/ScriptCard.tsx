@@ -27,7 +27,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
         text += `- Hình ảnh: ${scene.visual}\n`;
         text += `- Lời thoại: ${scene.voiceover}\n\n`;
     });
-    text += `**Kêu gọi hành động (CTA):**\n${script.cta}`;
+    text += `**Kêu gọi hành động (CTA):**\n${script.cta}\n\n`;
+
+    if (script.postContent && script.hashtags) {
+      text += `**Nội dung bài đăng:**\n${script.postContent}\n\n`;
+      text += `**Hashtags:**\n${script.hashtags.join(' ')}\n`;
+    }
     return text;
   };
 
@@ -47,7 +52,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
   };
 
   const downloadToFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -85,16 +90,16 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
 
   return (
     <div className={`bg-white dark:bg-slate-800/50 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm border border-slate-200 dark:border-slate-700 flex flex-col`}>
-      <div className={`p-5 bg-gradient-to-r ${colors[index % colors.length]}`}>
-        <h3 className="text-xl font-bold text-white flex items-center">
-            <span className="bg-white/20 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold mr-3">{index + 1}</span>
+      <div className={`p-4 sm:p-5 bg-gradient-to-r ${colors[index % colors.length]}`}>
+        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center">
+            <span className="bg-white/20 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">{index + 1}</span>
             {script.title}
         </h3>
       </div>
-      <div className="p-6 space-y-4 flex-grow">
+      <div className="p-4 sm:p-6 space-y-4 flex-grow">
         <div>
           <h4 className="font-semibold text-purple-600 dark:text-purple-300 mb-1">🎬 Mở đầu (Hook)</h4>
-          <p className="text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-purple-400">{script.hook}</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-purple-400">{script.hook}</p>
         </div>
 
         <div>
@@ -102,8 +107,8 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
           <div className="space-y-3 pl-4 border-l-2 border-sky-400">
             {script.scenes.map((scene, i) => (
               <div key={i} className="bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg">
-                <p className="text-gray-700 dark:text-gray-300"><span className="font-medium text-gray-900 dark:text-gray-100">Hình ảnh:</span> {scene.visual}</p>
-                <p className="text-gray-700 dark:text-gray-300"><span className="font-medium text-gray-900 dark:text-gray-100">Lời thoại:</span> {scene.voiceover}</p>
+                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300"><span className="font-medium text-gray-900 dark:text-gray-100">Hình ảnh:</span> {scene.visual}</p>
+                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300"><span className="font-medium text-gray-900 dark:text-gray-100">Lời thoại:</span> {scene.voiceover}</p>
               </div>
             ))}
           </div>
@@ -111,8 +116,19 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
         
         <div>
           <h4 className="font-semibold text-emerald-600 dark:text-emerald-300 mb-1">🚀 Kêu gọi hành động (CTA)</h4>
-          <p className="text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-emerald-400">{script.cta}</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-emerald-400">{script.cta}</p>
         </div>
+        
+        {script.postContent && script.hashtags && (
+          <div>
+            <h4 className="font-semibold text-orange-600 dark:text-orange-300 mb-1">✍️ Nội dung bài đăng</h4>
+             <div className="pl-4 border-l-2 border-orange-400 space-y-2">
+               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">{script.postContent}</p>
+               <p className="text-sm text-blue-500 dark:text-blue-400 font-medium">{script.hashtags.join(' ')}</p>
+            </div>
+          </div>
+        )}
+
       </div>
       <div className="mt-auto p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-around items-center">
         <ActionButton onClick={handleCopy} aria-label="Copy script">

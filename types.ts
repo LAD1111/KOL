@@ -8,6 +8,8 @@ export interface Script {
   hook: string;
   scenes: ScriptScene[];
   cta: string;
+  postContent?: string;
+  hashtags?: string[];
 }
 
 export interface HistoryItem {
