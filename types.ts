@@ -21,16 +21,3 @@ export interface HistoryItem {
   productLink: string;
   scripts: Script[];
 }
-
-declare global {
-  // FIX: Moved AIStudio interface inside `declare global` to properly augment the global scope
-  // and resolve the "Subsequent property declarations must have the same type" error.
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-  }
-
-  interface Window {
-    aistudio?: AIStudio;
-  }
-}

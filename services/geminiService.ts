@@ -28,9 +28,10 @@ export async function generateScripts(
   kolTone: string,
   includeCameraAngles: boolean,
   hookStyle: string,
-  generatePost: boolean
+  generatePost: boolean,
+  apiKey: string
 ): Promise<{ scripts: Script[] }> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  const ai = new GoogleGenAI({ apiKey });
 
   const textPart = {
     text: `Tạo 3 kịch bản video viral cho sản phẩm tại URL này: ${productLink}. Tập trung vào việc làm nổi bật các tính năng độc đáo và lợi ích cho khách hàng.`,
@@ -148,8 +149,8 @@ Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích
 }
 
 
-export async function generateVideoPreview(script: Script): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+export async function generateVideoPreview(script: Script, apiKey: string): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `Tạo một video ngắn, điện ảnh dựa trên kịch bản sau. Tiêu đề: "${script.title}". Nội dung: ${script.scenes.map(s => s.visual).join('. ')}. Lời kêu gọi hành động: ${script.cta}.`;
 
@@ -165,8 +166,12 @@ export async function generateVideoPreview(script: Script): Promise<string> {
       }
     });
   } catch(e) {
-    if (e instanceof Error && e.message.includes("API key not valid")) {
-       throw new Error("API key không hợp lệ hoặc chưa được kích hoạt thanh toán. Vui lòng chọn một key khác.");
+    if (e instanceof Error && (
+        e.message.includes("API key not valid") ||
+        e.message.includes("permission denied") ||
+        e.message.toLowerCase().includes("api key")
+    )) {
+       throw new Error("API_KEY_INVALID");
     }
     throw e;
   }
@@ -182,12 +187,12 @@ export async function generateVideoPreview(script: Script): Promise<string> {
     throw new Error('Không thể tạo video. Vui lòng thử lại.');
   }
 
-  const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  const response = await fetch(`${downloadLink}&key=${apiKey}`);
   if (!response.ok) {
     if (response.status === 404 || response.status === 403) {
       const errorText = await response.text();
       if (errorText.includes("Requested entity was not found")) {
-         throw new Error("API_KEY_NOT_FOUND");
+         throw new Error("API_KEY_INVALID");
       }
     }
     throw new Error(`Lỗi khi tải video: ${response.statusText}`);

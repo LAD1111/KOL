@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Script } from '../types';
 import CopyIcon from './icons/CopyIcon';
 import DownloadIcon from './icons/DownloadIcon';
 import FileTextIcon from './icons/FileTextIcon';
 import VideoIcon from './icons/VideoIcon';
 import StarIcon from './icons/StarIcon';
-import ApiKeyModal from './ApiKeyModal';
 import VideoPreviewModal from './VideoPreviewModal';
 import { generateVideoPreview } from '../services/geminiService';
 
@@ -13,6 +12,8 @@ interface ScriptCardProps {
   script: Script;
   index: number;
   onToggleSave: (scriptId: string) => void;
+  apiKey: string;
+  onInvalidApiKey: () => void;
 }
 
 const colors = [
@@ -21,15 +22,13 @@ const colors = [
   'from-emerald-500 to-teal-500',
 ];
 
-const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave }) => {
+const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave, apiKey, onInvalidApiKey }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const isAttemptingVideoGen = useRef(false);
-
+  
   const loadingMessages = [
     "Khởi tạo máy quay...",
     "Dựng cảnh đầu tiên...",
@@ -120,16 +119,15 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave }) 
     setIsGeneratingVideo(true);
     setVideoError(null);
     setVideoUrl(null);
-    isAttemptingVideoGen.current = false;
 
     try {
-      const url = await generateVideoPreview(script);
+      const url = await generateVideoPreview(script, apiKey);
       setVideoUrl(url);
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message === "API_KEY_NOT_FOUND") {
-          setVideoError("API key không hợp lệ. Vui lòng chọn lại.");
-          setShowApiKeyModal(true);
+        if (err.message === "API_KEY_INVALID") {
+          setVideoError("API key không hợp lệ. Vui lòng nhập lại.");
+          onInvalidApiKey();
         } else {
           setVideoError(err.message);
         }
@@ -143,21 +141,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave }) 
 
   const handleGenerateVideoClick = async () => {
     setVideoError(null);
-    isAttemptingVideoGen.current = true;
-    const hasKey = await window.aistudio?.hasSelectedApiKey();
-    if (!hasKey) {
-      setShowApiKeyModal(true);
-      return;
-    }
     await startVideoGeneration();
-  };
-  
-  const handleSelectKey = async () => {
-    setShowApiKeyModal(false);
-    await window.aistudio?.openSelectKey();
-    if (isAttemptingVideoGen.current) {
-        await startVideoGeneration();
-    }
   };
 
   const ActionButton: React.FC<{onClick: () => void, children: React.ReactNode, 'aria-label': string, disabled?: boolean}> = ({ onClick, children, 'aria-label': ariaLabel, disabled }) => (
@@ -174,15 +158,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index, onToggleSave }) 
 
   return (
     <>
-      {showApiKeyModal && (
-        <ApiKeyModal 
-          onClose={() => {
-            setShowApiKeyModal(false);
-            isAttemptingVideoGen.current = false;
-          }} 
-          onSelectKey={handleSelectKey}
-        />
-      )}
       {videoUrl && (
         <VideoPreviewModal 
           videoUrl={videoUrl} 

@@ -8,9 +8,9 @@ import SparklesIcon from './components/icons/SparklesIcon';
 import ThemeToggle from './components/ThemeToggle';
 import HistoryItemCard from './components/HistoryItemCard';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
-import ApiKeyGate from './components/ApiKeyGate';
 
 function App() {
+  const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('userApiKey'));
   const [productLink, setProductLink] = useState('');
   const [kolTone, setKolTone] = useState<string>('Năng động');
   const [hookStyle, setHookStyle] = useState<string>('Mặc định');
@@ -24,7 +24,6 @@ function App() {
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'history' | 'saved'>('history');
-  const [isKeyReady, setIsKeyReady] = useState(false);
 
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -53,17 +52,6 @@ function App() {
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
-
-  // Check for API key on initial load
-  useEffect(() => {
-    const checkApiKey = async () => {
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setIsKeyReady(hasKey);
-      }
-    };
-    checkApiKey();
-  }, []);
   
   // Effect for history
   useEffect(() => {
@@ -82,15 +70,12 @@ function App() {
     setHistory(newHistory);
     localStorage.setItem('scriptHistory', JSON.stringify(newHistory));
   }
-  
-  const handleSelectKey = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // Assume success and unlock the app to avoid race conditions.
-      // The subsequent API call will fail if the key is invalid, which is handled.
-      setIsKeyReady(true);
-    }
-  };
+
+  const handleInvalidApiKey = useCallback(() => {
+    setApiKey(null);
+    sessionStorage.removeItem('userApiKey');
+    setError("API key không hợp lệ hoặc chưa được kích hoạt. Vui lòng nhập lại.");
+  }, []);
 
   const handleToggleSaveScript = useCallback((scriptId: string) => {
     const newHistory = history.map(historyItem => {
@@ -109,6 +94,10 @@ function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productLink.trim() || isLoading) return;
+    if (!apiKey) {
+      handleInvalidApiKey();
+      return;
+    }
 
     try {
       new URL(productLink);
@@ -123,7 +112,7 @@ function App() {
     setSelectedHistoryId(null);
 
     try {
-      const result = await generateScripts(productLink, kolTone, includeCameraAngles, hookStyle, generatePost);
+      const result = await generateScripts(productLink, kolTone, includeCameraAngles, hookStyle, generatePost, apiKey);
       const newHistoryItem: HistoryItem = {
         id: `gen-${Date.now()}`,
         timestamp: Date.now(),
@@ -138,8 +127,7 @@ function App() {
     } catch (err) {
       if (err instanceof Error) {
         if (err.message === "API_KEY_INVALID") {
-          setError("API key không hợp lệ hoặc chưa được kích hoạt thanh toán. Vui lòng chọn một key khác.");
-          setIsKeyReady(false); // Re-lock the app
+          handleInvalidApiKey();
         } else {
           setError(err.message);
         }
@@ -192,19 +180,60 @@ function App() {
   const savedScripts = history
     .flatMap(item => item.scripts)
     .filter(script => script.saved);
+    
+  const ApiKeyEntryScreen = () => {
+    const [localApiKey, setLocalApiKey] = useState('');
 
-  if (!isKeyReady) {
+    const handleSubmitKey = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (localApiKey.trim()) {
+            setApiKey(localApiKey.trim());
+            sessionStorage.setItem('userApiKey', localApiKey.trim());
+            setError(null);
+        }
+    };
+
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div 
-          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-50 via-white to-sky-50 dark:from-slate-900 dark:via-slate-800/50 dark:to-indigo-900/30"
-          style={{zIndex: -1}}
-        ></div>
-        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-        <ApiKeyGate onSelectKey={handleSelectKey} />
-         {error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-red-500 bg-red-100 dark:bg-red-900/30 p-4 rounded-lg max-w-xl w-full mx-auto shadow-lg">{error}</div>}
-      </div>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+             <div 
+                className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-50 via-white to-sky-50 dark:from-slate-900 dark:via-slate-800/50 dark:to-indigo-900/30"
+                style={{zIndex: -1}}
+             ></div>
+            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+                <div className="max-w-md w-full bg-white dark:bg-slate-800/50 p-8 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
+                        Chào mừng bạn!
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6">
+                        Để bắt đầu, vui lòng nhập Google AI API Key của bạn.
+                    </p>
+                    <form onSubmit={handleSubmitKey}>
+                        <input
+                            type="password"
+                            value={localApiKey}
+                            onChange={(e) => setLocalApiKey(e.target.value)}
+                            placeholder="Nhập API Key của bạn tại đây"
+                            className="w-full bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200 mb-4"
+                        />
+                        <button
+                            type="submit"
+                            className="w-full bg-gradient-to-r from-purple-500 to-sky-500 hover:from-purple-600 hover:to-sky-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50"
+                            disabled={!localApiKey.trim()}
+                        >
+                            Bắt đầu
+                        </button>
+                    </form>
+                </div>
+                 {error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center text-red-500 bg-red-100 dark:bg-red-900/30 p-4 rounded-lg max-w-xl w-full mx-auto shadow-lg">{error}</div>}
+            </div>
+        </div>
     );
+  };
+
+
+  if (!apiKey) {
+    return <ApiKeyEntryScreen />;
   }
 
   return (
@@ -369,6 +398,8 @@ function App() {
                       script={script} 
                       index={index} 
                       onToggleSave={handleToggleSaveScript}
+                      apiKey={apiKey}
+                      onInvalidApiKey={handleInvalidApiKey}
                     />
                     ))}
                 </div>
@@ -438,7 +469,9 @@ function App() {
                         key={script.id} 
                         script={script} 
                         index={index}
-                        onToggleSave={handleToggleSaveScript} 
+                        onToggleSave={handleToggleSaveScript}
+                        apiKey={apiKey}
+                        onInvalidApiKey={handleInvalidApiKey} 
                       />
                     ))}
                   </div>
