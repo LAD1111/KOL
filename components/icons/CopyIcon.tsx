@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ChevronDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+const CopyIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -13,8 +13,9 @@ const ChevronDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     strokeLinejoin="round"
     {...props}
   >
-    <path d="m6 9 6 6 6-6" />
+    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
   </svg>
 );
 
-export default ChevronDownIcon;
+export default CopyIcon;

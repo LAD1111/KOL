@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { HistoryItem } from '../types';
 import TrashIcon from './icons/TrashIcon';

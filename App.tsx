@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { generateScripts } from './services/geminiService';
 import type { Script, HistoryItem } from './types';

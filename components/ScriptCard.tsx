@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import type { Script } from '../types';
+import CopyIcon from './icons/CopyIcon';
+import DownloadIcon from './icons/DownloadIcon';
+import FileTextIcon from './icons/FileTextIcon';
 
 interface ScriptCardProps {
   script: Script;
@@ -28,25 +31,67 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
     return text;
   };
 
+  const formatOutlineForExport = () => {
+    let text = `VIDEO OUTLINE: ${script.title}\n\n`;
+    text += `HOOK:\n- ${script.hook}\n\n`;
+    text += `SHOT LIST (VISUALS):\n`;
+    script.scenes.forEach((scene, i) => {
+        text += `- Cảnh ${i + 1}: ${scene.visual}\n`;
+    });
+    text += `\nCALL TO ACTION:\n- ${script.cta}`;
+    return text;
+  };
+
+  const sanitizeFilename = (name: string) => {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+  };
+
+  const downloadToFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(formatScriptForCopy());
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  const handleDownloadScript = () => {
+    downloadToFile(formatScriptForCopy(), `${sanitizeFilename(script.title)}_script.txt`);
+  };
+
+  const handleExportOutline = () => {
+    downloadToFile(formatOutlineForExport(), `${sanitizeFilename(script.title)}_outline.txt`);
+  };
+  
+  const ActionButton: React.FC<{onClick: () => void, children: React.ReactNode, 'aria-label': string}> = ({ onClick, children, 'aria-label': ariaLabel }) => (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200"
+    >
+      {children}
+    </button>
+  );
+
+
   return (
-    <div className={`bg-white dark:bg-slate-800/50 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm border border-slate-200 dark:border-slate-700`}>
+    <div className={`bg-white dark:bg-slate-800/50 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm border border-slate-200 dark:border-slate-700 flex flex-col`}>
       <div className={`p-5 bg-gradient-to-r ${colors[index % colors.length]}`}>
         <h3 className="text-xl font-bold text-white flex items-center">
             <span className="bg-white/20 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold mr-3">{index + 1}</span>
             {script.title}
         </h3>
       </div>
-      <div className="p-6 space-y-4 relative">
-        <button onClick={handleCopy} className="absolute top-4 right-4 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white font-semibold py-1 px-3 rounded-lg text-sm transition-colors duration-200">
-          {isCopied ? 'Đã chép!' : 'Chép'}
-        </button>
-
+      <div className="p-6 space-y-4 flex-grow">
         <div>
           <h4 className="font-semibold text-purple-600 dark:text-purple-300 mb-1">🎬 Mở đầu (Hook)</h4>
           <p className="text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-purple-400">{script.hook}</p>
@@ -68,6 +113,20 @@ const ScriptCard: React.FC<ScriptCardProps> = ({ script, index }) => {
           <h4 className="font-semibold text-emerald-600 dark:text-emerald-300 mb-1">🚀 Kêu gọi hành động (CTA)</h4>
           <p className="text-gray-600 dark:text-gray-300 pl-4 border-l-2 border-emerald-400">{script.cta}</p>
         </div>
+      </div>
+      <div className="mt-auto p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex justify-around items-center">
+        <ActionButton onClick={handleCopy} aria-label="Copy script">
+          <CopyIcon className="w-5 h-5" />
+          <span className="text-xs font-semibold">{isCopied ? 'Đã chép!' : 'Chép'}</span>
+        </ActionButton>
+        <ActionButton onClick={handleDownloadScript} aria-label="Download script as text">
+          <DownloadIcon className="w-5 h-5" />
+          <span className="text-xs font-semibold">Tải kịch bản</span>
+        </ActionButton>
+        <ActionButton onClick={handleExportOutline} aria-label="Export video outline">
+          <FileTextIcon className="w-5 h-5" />
+          <span className="text-xs font-semibold">Xuất dàn ý</span>
+        </ActionButton>
       </div>
     </div>
   );
