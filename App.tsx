@@ -8,9 +8,11 @@ import LoadingSpinner from './components/LoadingSpinner';
 import SparklesIcon from './components/icons/SparklesIcon';
 import ThemeToggle from './components/ThemeToggle';
 import HistoryItemCard from './components/HistoryItemCard';
+import ChevronDownIcon from './components/icons/ChevronDownIcon';
 
 function App() {
   const [productLink, setProductLink] = useState('');
+  const [kolTone, setKolTone] = useState<string>('Năng động');
   const [scripts, setScripts] = useState<Script[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +84,7 @@ function App() {
     setSelectedHistoryId(null);
 
     try {
-      const result = await generateScripts(productLink);
+      const result = await generateScripts(productLink, kolTone);
       const newHistoryItem: HistoryItem = {
         id: `gen-${Date.now()}`,
         timestamp: Date.now(),
@@ -141,25 +143,56 @@ function App() {
         </header>
 
         <div className="max-w-2xl mx-auto mb-12">
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 p-2 bg-white/50 dark:bg-slate-800/50 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-            <input
-              type="url"
-              value={productLink}
-              onChange={(e) => setProductLink(e.target.value)}
-              placeholder="https://shopee.vn/product/..."
-              className="w-full sm:flex-1 bg-transparent py-3 px-5 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-              disabled={isLoading}
-              required
-            />
-            <button
-              type="submit"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-sky-500 hover:from-purple-600 hover:to-sky-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading || !productLink.trim()}
-            >
-              <SparklesIcon className="w-5 h-5"/>
-              {isLoading ? 'Đang sáng tạo...' : 'Tạo kịch bản'}
-            </button>
-          </form>
+          <div className="space-y-6 p-4 sm:p-6 bg-white/50 dark:bg-slate-800/50 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+            <div>
+              <label htmlFor="kolTone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                1. Chọn giọng điệu cho KOL
+              </label>
+              <div className="relative">
+                <select
+                  id="kolTone"
+                  value={kolTone}
+                  onChange={(e) => setKolTone(e.target.value)}
+                  className="w-full appearance-none bg-white/50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-slate-800 dark:text-slate-200"
+                  disabled={isLoading}
+                >
+                  <option value="Năng động">Năng động &amp; Nhiệt huyết</option>
+                  <option value="Hài hước">Hài hước &amp; Dí dỏm</option>
+                  <option value="Chuyên nghiệp">Chuyên nghiệp &amp; Chuyên gia</option>
+                  <option value="Chân thực">Chân thực &amp; Gần gũi</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
+                  <ChevronDownIcon className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="productLink" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                2. Dán link sản phẩm và tạo kịch bản
+              </label>
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 p-2 bg-white/50 dark:bg-slate-900/30 rounded-full border border-slate-200 dark:border-slate-700">
+                <input
+                  id="productLink"
+                  type="url"
+                  value={productLink}
+                  onChange={(e) => setProductLink(e.target.value)}
+                  placeholder="https://shopee.vn/product/..."
+                  className="w-full sm:flex-1 bg-transparent py-3 px-5 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-sky-500 hover:from-purple-600 hover:to-sky-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading || !productLink.trim()}
+                >
+                  <SparklesIcon className="w-5 h-5"/>
+                  {isLoading ? 'Đang sáng tạo...' : 'Tạo kịch bản'}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <div className="mb-12">
