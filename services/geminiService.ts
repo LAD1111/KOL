@@ -123,9 +123,66 @@ Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích
   const responseText = response.text;
   try {
     const parsedJson = JSON.parse(responseText);
+    if (parsedJson.scripts && Array.isArray(parsedJson.scripts)) {
+      const scriptsWithIds: Script[] = parsedJson.scripts.map((script: Omit<Script, 'id' | 'saved'>, index: number) => ({
+        ...script,
+        id: `script-${Date.now()}-${index}`,
+      }));
+      return { ...parsedJson, scripts: scriptsWithIds };
+    }
     return parsedJson;
   } catch (error) {
     console.error("Failed to parse JSON response:", responseText);
     throw new Error("AI đã trả về một định dạng không hợp lệ. Vui lòng thử lại.");
   }
+}
+
+
+export async function generateVideoPreview(script: Script): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+  const prompt = `Tạo một video ngắn, điện ảnh dựa trên kịch bản sau. Tiêu đề: "${script.title}". Nội dung: ${script.scenes.map(s => s.visual).join('. ')}. Lời kêu gọi hành động: ${script.cta}.`;
+
+  let operation;
+  try {
+    operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt: prompt,
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: '9:16' // Portrait for social media
+      }
+    });
+  } catch(e) {
+    if (e instanceof Error && e.message.includes("API key not valid")) {
+       throw new Error("API key không hợp lệ hoặc chưa được kích hoạt thanh toán. Vui lòng chọn một key khác.");
+    }
+    throw e;
+  }
+  
+  while (!operation.done) {
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
+    operation = await ai.operations.getVideosOperation({ operation: operation });
+  }
+
+  const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+
+  if (!downloadLink) {
+    throw new Error('Không thể tạo video. Vui lòng thử lại.');
+  }
+
+  const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  if (!response.ok) {
+    if (response.status === 404 || response.status === 403) {
+      const errorText = await response.text();
+      if (errorText.includes("Requested entity was not found")) {
+         throw new Error("API_KEY_NOT_FOUND");
+      }
+    }
+    throw new Error(`Lỗi khi tải video: ${response.statusText}`);
+  }
+
+  const videoBlob = await response.blob();
+  return URL.createObjectURL(videoBlob);
 }

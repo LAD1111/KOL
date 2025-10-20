@@ -21,6 +21,8 @@ function App() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [filterEnabled, setFilterEnabled] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'history' | 'saved'>('history');
 
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -68,11 +70,24 @@ function App() {
     localStorage.setItem('scriptHistory', JSON.stringify(newHistory));
   }
 
+  const handleToggleSaveScript = useCallback((scriptId: string) => {
+    const newHistory = history.map(historyItem => {
+      const scriptIndex = historyItem.scripts.findIndex(s => s.id === scriptId);
+      if (scriptIndex > -1) {
+        const updatedScripts = [...historyItem.scripts];
+        const targetScript = updatedScripts[scriptIndex];
+        updatedScripts[scriptIndex] = { ...targetScript, saved: !targetScript.saved };
+        return { ...historyItem, scripts: updatedScripts };
+      }
+      return historyItem;
+    });
+    updateHistory(newHistory);
+  }, [history]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productLink.trim() || isLoading) return;
 
-    // Basic URL validation
     try {
       new URL(productLink);
     } catch (_) {
@@ -110,7 +125,6 @@ function App() {
     setScripts(item.scripts);
     setSelectedHistoryId(item.id);
     setError(null);
-     // Scroll to top to see the results
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -124,6 +138,29 @@ function App() {
   }, [history, selectedHistoryId]);
 
   const displayedScripts = filterEnabled && scripts ? filterScripts(scripts) : scripts;
+
+  const filteredHistory = history.filter(item => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    
+    const linkMatch = item.productLink.toLowerCase().includes(query);
+    if (linkMatch) return true;
+
+    return item.scripts.some(script => 
+      script.title.toLowerCase().includes(query) ||
+      script.hook.toLowerCase().includes(query) ||
+      script.cta.toLowerCase().includes(query) ||
+      (script.postContent && script.postContent.toLowerCase().includes(query)) ||
+      script.scenes.some(scene => 
+        scene.visual.toLowerCase().includes(query) ||
+        scene.voiceover.toLowerCase().includes(query)
+      )
+    );
+  });
+
+  const savedScripts = history
+    .flatMap(item => item.scripts)
+    .filter(script => script.saved);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
@@ -282,7 +319,12 @@ function App() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {displayedScripts.map((script, index) => (
-                    <ScriptCard key={index} script={script} index={index} />
+                    <ScriptCard 
+                      key={script.id} 
+                      script={script} 
+                      index={index} 
+                      onToggleSave={handleToggleSaveScript}
+                    />
                     ))}
                 </div>
               </div>
@@ -290,19 +332,76 @@ function App() {
         </div>
 
         {history.length > 0 && (
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-6 text-slate-800 dark:text-slate-200">Lịch sử sáng tạo</h2>
-            <div className="space-y-3">
-              {history.map(item => (
-                <HistoryItemCard 
-                  key={item.id} 
-                  item={item} 
-                  onSelect={handleSelectHistoryItem}
-                  onDelete={handleDeleteHistoryItem}
-                  isSelected={item.id === selectedHistoryId}
-                />
-              ))}
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Lịch sử & Kịch bản đã lưu</h2>
+              <div className="p-1 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center">
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+                >
+                  Lịch sử ({history.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('saved')}
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${activeTab === 'saved' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+                >
+                  Đã lưu ({savedScripts.length})
+                </button>
+              </div>
             </div>
+
+            {activeTab === 'history' && (
+              <div>
+                <div className="mb-4 relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm trong lịch sử theo link, tiêu đề, lời thoại..."
+                    className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-full py-3 px-5 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {filteredHistory.length > 0 ? (
+                    filteredHistory.map(item => (
+                      <HistoryItemCard 
+                        key={item.id} 
+                        item={item} 
+                        onSelect={handleSelectHistoryItem}
+                        onDelete={handleDeleteHistoryItem}
+                        isSelected={item.id === selectedHistoryId}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 dark:text-slate-400 py-6">Không tìm thấy kết quả phù hợp.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'saved' && (
+              <div>
+                {savedScripts.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {savedScripts.map((script, index) => (
+                      <ScriptCard 
+                        key={script.id} 
+                        script={script} 
+                        index={index}
+                        onToggleSave={handleToggleSaveScript} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-slate-500 dark:text-slate-400 py-6">Bạn chưa lưu kịch bản nào.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>

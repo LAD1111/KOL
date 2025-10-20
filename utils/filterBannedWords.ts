@@ -2,27 +2,64 @@
 import type { Script } from '../types';
 
 // Ánh xạ từ các từ bị cấm sang các từ đồng nghĩa hoặc cụm từ thay thế an toàn hơn.
+// Map from banned words to safer synonyms or replacement phrases.
+// This list is curated to avoid common triggers on social media platforms like TikTok.
 const BANNED_WORD_MAP: { [key: string]: string } = {
-    'mua bán': 'trải nghiệm',
-    'bán hàng': 'chia sẻ',
-    'cam kết': 'tự tin',
-    'đảm bảo 100%': 'hỗ trợ tối đa',
-    'chắc chắn': 'tin rằng',
-    'tuyệt đối': 'vô cùng hiệu quả',
-    'liên hệ': 'thông tin ở bio',
-    'địa chỉ': 'thông tin ở bio',
-    'số điện thoại': 'thông tin ở bio',
-    'sđt': 'thông tin ở bio',
-    'zalo': 'app ZL',
+    // === Nền tảng & Mạng xã hội (Platforms & Social Media) ===
+    'shopee': 'sàn Cam',
+    'lazada': 'sàn Xanh',
+    'tiki': 'sàn T',
+    'facebook': 'nền tảng FB',
+    'instagram': 'nền tảng IG',
+    'youtube': 'nền tảng YT',
+    'tiktok': 'nền tảng này',
+    'link in bio': 'thông tin ở bio',
+    'link': 'liên kết',
+    'click': 'nhấn vào',
+    'comment': 'để lại ý kiến',
+    'share': 'chia sẻ',
+    'like': 'thả tim',
+    'follow': 'theo dõi',
+    'dm': 'nhắn tin',
     'inbox': 'nhắn tin cho mình',
+    
+    // === Bán hàng & Giá cả (Sales & Pricing) ===
+    'mua bán': 'trao đổi',
+    'bán hàng': 'chia sẻ',
+    'mua ngay': 'trải nghiệm ngay',
+    'đặt hàng': 'đăng ký',
+    'thanh toán': 'hoàn tất',
+    'giảm giá': 'ưu đãi',
+    'khuyến mãi': 'chương trình đặc biệt',
+    'sale': 'ưu đãi lớn',
+    'flash sale': 'giảm giá chớp nhoáng',
+    'deal': 'cơ hội tốt',
+    'hot': 'nổi bật',
+    'trend': 'xu hướng',
+    'viral': 'lan truyền',
     'miễn phí': '0 đồng',
     'free ship': 'hỗ trợ phí vận chuyển',
     'rẻ nhất': 'giá cực tốt',
     'giá rẻ': 'giá ưu đãi',
+    'giá sốc': 'giá bất ngờ',
+    'rẻ sập sàn': 'giá cực tốt',
+    'tiền': 'ngân lượng', // slang for money
+    'tiền tệ': 'tài chính',
+
+    // === Cam kết & Tuyệt đối hóa (Commitments & Absolutes) ===
+    'cam kết': 'tự tin',
+    'đảm bảo 100%': 'hỗ trợ tối đa',
+    'chắc chắn': 'tin rằng',
+    'tuyệt đối': 'vô cùng hiệu quả',
+    'hiệu quả 100%': 'hiệu quả rõ rệt',
     'duy nhất': 'đặc biệt',
     'hàng đầu': 'nổi bật',
     'top 1': 'được ưa chuộng',
     'số một': 'được yêu thích',
+    'thần thánh': 'cực kỳ hiệu quả',
+    'thần dược': 'sản phẩm hỗ trợ tốt',
+
+    // === Sức khỏe & Y tế (Health & Medical) ===
     'khỏi bệnh': 'cải thiện',
     'chữa trị': 'hỗ trợ',
     'điều trị': 'hỗ trợ',
@@ -30,15 +67,37 @@ const BANNED_WORD_MAP: { [key: string]: string } = {
     'yếu sinh lý': 'hỗ trợ phái mạnh',
     'tăng cân': 'cải thiện cân nặng',
     'giảm cân': 'quản lý vóc dáng',
+    'thuốc': 'sản phẩm', // "thuốc" (medicine) is heavily regulated
+    'bác sĩ': 'chuyên gia',
+    'phòng khám': 'trung tâm chăm sóc',
+    'bệnh viện': 'cơ sở y tế',
+    
+    // === Làm đẹp & Thẩm mỹ (Beauty & Cosmetics) ===
     'eo thon': 'vóc dáng cân đối',
     'dáng đẹp': 'dáng xinh',
+    'trị mụn': 'hỗ trợ giảm mụn',
     'mụn': 'làn da có khuyết điểm',
-    'sẹo': 'vết thâm',
+    'trị nám': 'hỗ trợ làm mờ nám',
     'nám': 'da không đều màu',
+    'sẹo': 'vết thâm',
+    'mờ sẹo': 'cải thiện vết thâm',
     'trắng da': 'làm sáng da',
+    'trắng bật tone': 'da sáng mịn màng',
+    'chống lão hóa': 'hỗ trợ làn da trẻ trung',
+    'xóa nhăn': 'làm mờ nếp nhăn',
     'thẩm mỹ viện': 'trung tâm làm đẹp',
     'dao kéo': 'can thiệp thẩm mỹ',
     'phẫu thuật': 'can thiệp thẩm mỹ',
+
+    // === Thông tin liên hệ (Contact Information) ===
+    'liên hệ': 'thông tin ở bio',
+    'địa chỉ': 'thông tin ở bio',
+    'số điện thoại': 'thông tin ở bio',
+    'sđt': 'thông tin ở bio',
+    'zalo': 'app ZL',
+    'email': 'thư điện tử',
+
+    // === Nội dung nhạy cảm & Cấm (Sensitive & Banned Content) ===
     'thuốc lá': 'sản phẩm có hại',
     'rượu': 'đồ uống có cồn',
     'bia': 'đồ uống có cồn',
@@ -57,13 +116,6 @@ const BANNED_WORD_MAP: { [key: string]: string } = {
     'lừa đảo': 'hành vi không trung thực',
     'ăn cắp': 'lấy đồ',
     'hack': 'xâm nhập',
-    'shopee': 'sàn Cam',
-    'lazada': 'sàn Xanh',
-    'tiki': 'sàn T',
-    'facebook': 'nền tảng FB',
-    'instagram': 'nền tảng IG',
-    'youtube': 'nền tảng YT',
-    'tiktok': 'nền tảng này',
 };
 
 /**
@@ -111,6 +163,7 @@ export const filterScripts = (scripts: Script[]): Script[] => {
         title: filterText(script.title),
         hook: filterText(script.hook),
         cta: filterText(script.cta),
+        postContent: script.postContent ? filterText(script.postContent) : script.postContent,
         scenes: script.scenes.map(scene => ({
             ...scene,
             visual: filterText(scene.visual),
