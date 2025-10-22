@@ -9,10 +9,15 @@ import ThemeToggle from './components/ThemeToggle';
 import HistoryItemCard from './components/HistoryItemCard';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
 import LinkResolver from './components/LinkResolver';
+import ImageUploader from './components/ImageUploader';
 
 function App() {
   const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('userApiKey'));
+  
+  const [inputType, setInputType] = useState<'url' | 'image'>('url');
   const [productLink, setProductLink] = useState('');
+  const [productImage, setProductImage] = useState<{ data: string, mimeType: string } | null>(null);
+
   const [kolTone, setKolTone] = useState<string>('Năng động');
   const [hookStyle, setHookStyle] = useState<string>('Mặc định');
   const [includeCameraAngles, setIncludeCameraAngles] = useState(false);
@@ -94,17 +99,21 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productLink.trim() || isLoading) return;
+    const isReady = (inputType === 'url' && productLink.trim()) || (inputType === 'image' && productImage);
+    if (!isReady || isLoading) return;
+    
     if (!apiKey) {
       handleInvalidApiKey();
       return;
     }
 
-    try {
-      new URL(productLink);
-    } catch (_) {
-      setError('Vui lòng nhập một URL hợp lệ.');
-      return;
+    if (inputType === 'url') {
+      try {
+        new URL(productLink);
+      } catch (_) {
+        setError('Vui lòng nhập một URL hợp lệ.');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -113,11 +122,16 @@ function App() {
     setSelectedHistoryId(null);
 
     try {
-      const result = await generateScripts(productLink, kolTone, includeCameraAngles, hookStyle, generatePost, apiKey);
+      const input = inputType === 'url'
+        ? { type: 'url' as const, value: productLink }
+        : { type: 'image' as const, value: productImage! };
+
+      const result = await generateScripts(input, kolTone, includeCameraAngles, hookStyle, generatePost, apiKey);
+      
       const newHistoryItem: HistoryItem = {
         id: `gen-${Date.now()}`,
         timestamp: Date.now(),
-        productLink,
+        productLink: inputType === 'url' ? productLink : `[Ảnh sản phẩm @ ${new Date().toLocaleTimeString()}]`,
         scripts: result.scripts,
       };
       
@@ -141,7 +155,15 @@ function App() {
   };
 
   const handleSelectHistoryItem = useCallback((item: HistoryItem) => {
-    setProductLink(item.productLink);
+    if (item.productLink.startsWith('[Ảnh sản phẩm')) {
+      setProductLink('');
+      setProductImage(null);
+      setInputType('url');
+    } else {
+      setProductLink(item.productLink);
+      setProductImage(null);
+      setInputType('url');
+    }
     setScripts(item.scripts);
     setSelectedHistoryId(item.id);
     setError(null);
@@ -236,6 +258,8 @@ function App() {
   if (!apiKey) {
     return <ApiKeyEntryScreen />;
   }
+  
+  const isSubmitDisabled = isLoading || (inputType === 'url' ? !productLink.trim() : !productImage);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
@@ -252,12 +276,28 @@ function App() {
             AI Viral Video Script Generator
           </h1>
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-            Dán link sản phẩm của bạn và để AI KOL tạo 3 kịch bản video TikTok & Reels viral chỉ trong vài giây!
+            Dán link hoặc tải ảnh sản phẩm để AI KOL tạo 3 kịch bản video TikTok & Reels viral!
           </p>
         </header>
 
         <div className="max-w-2xl mx-auto mb-12">
           <div className="bg-white/50 dark:bg-slate-800/50 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+            <div className="flex border-b border-slate-200 dark:border-slate-700 p-1.5">
+              <button
+                onClick={() => setInputType('url')}
+                disabled={isLoading}
+                className={`flex-1 text-center font-semibold py-2 rounded-full transition-all duration-200 ${inputType === 'url' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+              >
+                Dán Link
+              </button>
+              <button
+                onClick={() => setInputType('image')}
+                disabled={isLoading}
+                className={`flex-1 text-center font-semibold py-2 rounded-full transition-all duration-200 ${inputType === 'image' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+              >
+                Tải ảnh
+              </button>
+            </div>
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
               <div>
                 <label htmlFor="kolTone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -301,6 +341,15 @@ function App() {
                     <option value="Tạo sự tranh luận">Mở đầu: Tạo sự tranh luận</option>
                     <option value="Dựa trên kết quả">Mở đầu: Dựa trên kết quả</option>
                     <option value="Kêu gọi hành động">Mở đầu: Kêu gọi hành động</option>
+                    <option value="Khiến người ta nghĩ lại">Mở đầu: Khiến người ta nghĩ lại</option>
+                    <option value="Nghe là muốn xem ngay">Mở đầu: Nghe là muốn xem ngay</option>
+                    <option value="Cầm tay chỉ việc">Mở đầu: "Cầm tay chỉ việc"</option>
+                    <option value="Cảnh báo gây tò mò">Mở đầu: Cảnh báo gây tò mò</option>
+                    <option value="Chạm đến cảm xúc">Mở đầu: Chạm đến cảm xúc</option>
+                    <option value="Sử dụng con số đắt giá">Mở đầu: Con số "đắt giá"</option>
+                    <option value="Lối nói ngược đời">Mở đầu: Lối nói "ngược đời"</option>
+                    <option value="Khiến người khác suy ngẫm">Mở đầu: Khiến người khác suy ngẫm</option>
+                    <option value="Gây cảm giác khẩn cấp">Mở đầu: Gây cảm giác khẩn cấp</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-700 dark:text-slate-300">
                     <ChevronDownIcon className="w-5 h-5" />
@@ -346,20 +395,35 @@ function App() {
               </div>
             
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  2. Cung cấp link sản phẩm
-                </label>
-                <LinkResolver 
-                  productLink={productLink}
-                  onProductLinkChange={setProductLink}
-                />
+                {inputType === 'url' ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      2. Cung cấp link sản phẩm
+                    </label>
+                    <LinkResolver 
+                      productLink={productLink}
+                      onProductLinkChange={setProductLink}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      2. Cung cấp ảnh sản phẩm
+                    </label>
+                    <ImageUploader 
+                      productImage={productImage}
+                      onImageReady={setProductImage}
+                      onImageRemove={() => setProductImage(null)}
+                    />
+                  </>
+                )}
               </div>
 
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-sky-500 hover:from-purple-600 hover:to-sky-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading || !productLink.trim()}
+                  disabled={isSubmitDisabled}
                 >
                   <SparklesIcon className="w-5 h-5"/>
                   {isLoading ? 'Đang sáng tạo...' : 'Tạo kịch bản'}

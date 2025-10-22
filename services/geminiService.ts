@@ -19,12 +19,21 @@ const HOOK_STYLE_DESCRIPTIONS: { [key: string]: string } = {
   'Gợi sự liên tưởng': 'Hãy tạo một câu mở đầu (hook) kết nối với một trải nghiệm, cảm xúc hoặc vấn đề chung mà đối tượng mục tiêu thường gặp phải.',
   'Tạo sự tranh luận': 'Hãy tạo một câu mở đầu (hook) đưa ra một quan điểm gây tranh cãi hoặc thách thức một niềm tin phổ biến để khuyến khích bình luận.',
   'Dựa trên kết quả': 'Hãy tạo một câu mở đầu (hook) hiển thị một kết quả ấn tượng, một sự thay đổi trước và sau, hoặc một bằng chứng xã hội (ví dụ: "Đây là lý do tại sao sản phẩm này bán hết veo").',
-  'Kêu gọi hành động': 'Hãy tạo một câu mở đầu (hook) bắt đầu bằng một mệnh lệnh hoặc một lời kêu gọi trực tiếp (ví dụ: "Dừng ngay việc... nếu bạn...").'
+  'Kêu gọi hành động': 'Hãy tạo một câu mở đầu (hook) bắt đầu bằng một mệnh lệnh hoặc một lời kêu gọi trực tiếp (ví dụ: "Dừng ngay việc... nếu bạn...").',
+  'Khiến người ta nghĩ lại': 'Hãy tạo một câu mở đầu (hook) lật ngược một quan niệm phổ biến hoặc một sự thật hiển nhiên, khiến người xem phải dừng lại và suy nghĩ, ví dụ: "Bạn đã dùng sai [tên sản phẩm] cả đời rồi".',
+  'Nghe là muốn xem ngay': 'Hãy tạo một câu mở đầu (hook) trực diện, hấp dẫn, hứa hẹn một giá trị hoặc kết quả cực kỳ lôi cuốn ngay lập tức, ví dụ: "Bí quyết để [đạt được điều gì đó] chỉ trong 1 nốt nhạc".',
+  'Cầm tay chỉ việc': 'Hãy tạo một câu mở đầu (hook) dưới dạng hướng dẫn trực tiếp, bắt đầu bằng các cụm từ như "Cách để...", "Hướng dẫn...", "Làm thế nào để...", tạo cảm giác dễ làm theo.',
+  'Cảnh báo gây tò mò': 'Hãy tạo một câu mở đầu (hook) mang tính cảnh báo, rủi ro hoặc chỉ ra sai lầm phổ biến, ví dụ: "Tuyệt đối đừng [làm gì đó] nếu bạn không muốn [hậu quả tiêu cực]".',
+  'Chạm đến cảm xúc': 'Hãy tạo một câu mở đầu (hook) kể một câu chuyện ngắn, gợi lại một kỷ niệm hoặc chạm đến một cảm xúc sâu sắc (vui, buồn, đồng cảm) mà khán giả có thể kết nối.',
+  'Sử dụng con số đắt giá': 'Hãy tạo một câu mở đầu (hook) chứa một con số cụ thể, ấn tượng hoặc đáng kinh ngạc để tạo sự tin cậy và tò mò, ví dụ: "99% mọi người không biết mẹo này..." hoặc "Tiết kiệm [số tiền] mỗi tháng nhờ...".',
+  'Lối nói ngược đời': 'Hãy tạo một câu mở đầu (hook) đưa ra một lời khuyên hoặc hành động có vẻ vô lý, trái ngược với lẽ thường nhưng lại hiệu quả, ví dụ: "Muốn [đạt kết quả tốt], hãy thử [làm điều ngược lại]".',
+  'Khiến người khác suy ngẫm': 'Hãy tạo một câu mở đầu (hook) đặt ra một câu hỏi sâu sắc, triết lý hoặc một vấn đề buộc người xem phải dừng lại và tự vấn bản thân.',
+  'Gây cảm giác khẩn cấp': 'Hãy tạo một câu mở đầu (hook) tạo ra cảm giác cấp bách, thôi thúc hành động ngay lập tức bằng cách sử dụng các từ như "Ngay bây giờ", "Trước khi quá muộn", "Cơ hội cuối cùng".'
 };
 
 
 export async function generateScripts(
-  productLink: string,
+  input: { type: 'url'; value: string } | { type: 'image'; value: { data: string; mimeType: string } },
   kolTone: string,
   includeCameraAngles: boolean,
   hookStyle: string,
@@ -32,10 +41,6 @@ export async function generateScripts(
   apiKey: string
 ): Promise<{ scripts: Script[] }> {
   const ai = new GoogleGenAI({ apiKey });
-
-  const textPart = {
-    text: `Tạo 3 kịch bản video viral cho sản phẩm tại URL này: ${productLink}. Hãy nhớ tuân thủ nguyên tắc cốt lõi của bạn là chỉ phân tích trang sản phẩm cuối cùng.`,
-  };
 
   const selectedToneDescription = TONE_DESCRIPTIONS[kolTone] || TONE_DESCRIPTIONS['Năng động'];
   
@@ -51,17 +56,50 @@ export async function generateScripts(
     ? "Ngoài ra, đối với mỗi kịch bản, hãy tạo một nội dung bài đăng ngắn gọn, hấp dẫn để đăng lên TikTok kèm theo video. Nội dung này phải bao gồm 5 hashtag có liên quan và đang thịnh hành."
     : "";
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: { parts: [textPart] },
-      config: {
-        systemInstruction: `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
+  let systemInstruction: string;
+  let contents: { parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] };
+
+  if (input.type === 'url') {
+    systemInstruction = `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
 
 NGUYÊN TẮC CỐT LÕI (TUYỆT ĐỐI KHÔNG ĐƯỢC PHÁ VỠ): Khi nhận được một URL, bạn BẮT BUỘC phải truy cập vào trang ĐÍCH CUỐI CÙNG của nó. Nếu đó là một liên kết rút gọn (ví dụ: link từ TikTok Shop, bit.ly), bạn phải đi theo tất cả các bước chuyển hướng để đến trang sản phẩm thực sự. TUYỆT ĐỐI KHÔNG phân tích các trang trung gian. Đây là yêu cầu quan trọng nhất trong toàn bộ nhiệm vụ.
 
-Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích thông tin sản phẩm (tên, mô tả, hình ảnh, tính năng, lợi ích) và tạo ra 3 kịch bản video độc đáo và sáng tạo. Mỗi kịch bản phải ngắn gọn, hấp dẫn và được thiết kế để giới thiệu các tính năng và lợi ích tốt nhất của sản phẩm. ${cameraInstruction} ${hookInstruction} ${postInstruction}
-`,
+Nhiệm vụ: Dựa trên URL sản phẩm được cung cấp, hãy phân tích thông tin sản phẩm (tên, mô tả, hình ảnh, tính năng, lợi ích) và tạo ra 3 kịch bản video độc đáo và sáng tạo. Mỗi kịch bản phải ngắn gọn, hấp dẫn và được thiết kế để giới thiệu các tính năng và lợi ích tốt nhất của sản phẩm. ${cameraInstruction} ${hookInstruction} ${postInstruction}`;
+    
+    contents = {
+      parts: [{
+        text: `Tạo 3 kịch bản video viral cho sản phẩm tại URL này: ${input.value}. Hãy nhớ tuân thủ nguyên tắc cốt lõi của bạn là chỉ phân tích trang sản phẩm cuối cùng.`,
+      }],
+    };
+  } else { // Image input
+    systemInstruction = `Bạn là một KOL (Key Opinion Leader) hàng đầu trên mạng xã hội, chuyên gia tạo video ngắn viral cho TikTok và Instagram Reels. ${selectedToneDescription} Bạn biết cách thu hút sự chú ý trong 3 giây đầu tiên và thúc đẩy doanh số bán hàng.
+
+NGUYÊN TẮC CỐT LÕI (TUYỆT ĐỐI KHÔNG ĐƯỢC PHÁ VỠ): Khi nhận được một HÌNH ẢNH, bạn BẮT BUỘC phải phân tích hình ảnh để xác định sản phẩm, sau đó tìm kiếm thông tin chi tiết về nó trên web (tên, tính năng, lợi ích, đối tượng khách hàng) để có được sự hiểu biết đầy đủ. TUYỆT ĐỐI KHÔNG bịa đặt thông tin. Đây là yêu cầu quan trọng nhất trong toàn bộ nhiệm vụ.
+
+Nhiệm vụ: Dựa trên HÌNH ẢNH sản phẩm được cung cấp và thông tin bạn tìm được trên web, hãy tạo ra 3 kịch bản video độc đáo và sáng tạo. Mỗi kịch bản phải ngắn gọn, hấp dẫn và được thiết kế để giới thiệu các tính năng và lợi ích tốt nhất của sản phẩm. ${cameraInstruction} ${hookInstruction} ${postInstruction}`;
+
+    contents = {
+      parts: [
+        {
+          text: "Phân tích hình ảnh sản phẩm này. Hãy xác định sản phẩm, tìm kiếm thông tin về nó trực tuyến, và sau đó tạo 3 kịch bản video viral cho sản phẩm đó.",
+        },
+        {
+          inlineData: {
+            mimeType: input.value.mimeType,
+            data: input.value.data,
+          },
+        },
+      ],
+    };
+  }
+
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: contents,
+      config: {
+        systemInstruction: systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
